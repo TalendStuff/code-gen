@@ -16,24 +16,23 @@ import org.talend.repository.ui.wizards.exportjob.scriptsmanager.JobJavaScriptsM
 /* Refer org.talend.repository.ui.wizards.exportjob.action.reBuildJobZipFile */
 
 public class ClasspathFixup {
-	 	
-	private JobJavaScriptsManager manager;
-	
-	public ClasspathFixup(JobJavaScriptsManager manager)
-	{
-		this.manager = manager; 		
-	}
-	
-	 /**
-     * 
+
+    private JobJavaScriptsManager manager;
+
+    public ClasspathFixup(JobJavaScriptsManager manager)
+    {
+        this.manager = manager;
+    }
+
+    /**
+     *
      * DOC aiming Comment method "reBuildJobZipFile".
-     * 
+     *
      * @param processes
-     */
+    */
     public void reBuildJobZipFile(List<ExportFileResource> processes, String zipFile) {
-    	//   
-        JavaJobExportReArchieveCreator creator = null;        
-                      
+        JavaJobExportReArchieveCreator creator = null;
+
         String destinationZipFile = manager.getDestinationPath();
 
         String tmpFolder = JavaJobExportReArchieveCreator.getTmpFolder();
@@ -72,11 +71,11 @@ public class ClasspathFixup {
             new File(zipFile).delete(); // delete the temp zip file
         }
     }
-    
+
     /**
      * Added by Marvin Wang on Feb.1, 2012 for estimating if the file can be created. In win7 or other systems, have not
      * the permission to create a file directly under system disk(like C:\).
-     * 
+     *
      * @param disZipFileStr
      * @return
      */
@@ -92,5 +91,5 @@ public class ClasspathFixup {
             }
         }
         return flag;
-    }        
+    }
 }
