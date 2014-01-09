@@ -18,9 +18,36 @@
 # TALEND_WORKSPACE=$WORKSPACE/../.talend-workspace
 # TALEND_REPO=$WORKSPACE
 
+declare -r TALEND_LOCK=$HOME/talend-lock
+
+# locks, to prevent multiple access while exporting a talend job on a common
+# workspace
+_lock() {
+	echo -n "Obtaining talend lock..."
+	local -i i=0
+	while [ $i -lt 600 ]; do
+		mkdir $TALEND_LOCK >& /dev/null && \
+			trap "{ rmdir $TALEND_LOCK; echo 'Critical: Aborted.'; exit 2; }" INT && \
+			echo "Done!" && \
+			return 0
+		echo -n "."
+		sleep 1
+		let i=$i+1
+	done
+	echo "Critical: Couldn't obtain exclusive vagrant lock '$TALEND_LOCK'"
+	exit 2
+}
+
+# unlocks
+_unlock() {
+	rmdir $TALEND_LOCK
+}
+
 # builds a job
 # $1 - job name
 export_job() {
+	_lock
+
 	local job_name=$1; shift
 	mkdir -p $TALEND_BUILD
 	$TALEND_EXEC \
@@ -32,6 +59,8 @@ export_job() {
 		-jobName $job_name \
 		-projectDir $TALEND_REPO/$TALEND_PROJECT_NAME \
 		-targetDir $TALEND_BUILD
+
+	_unlock
 }
 
 # main
