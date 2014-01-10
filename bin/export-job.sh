@@ -49,6 +49,10 @@ export_job() {
 	_lock
 
 	local job_name=$1; shift
+	# create a clean workspace else intermediate build files in .Java,
+	# .JETEmitters, .metadata subdirectories will cause issues
+	rm -rf $TALEND_WORKSPACE >& /dev/null
+	mkdir -p $TALEND_WORKSPACE
 	mkdir -p $TALEND_BUILD
 	$TALEND_EXEC \
 		--clean_component_cache --disableShellInput -nosplash \
