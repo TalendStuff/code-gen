@@ -8,6 +8,9 @@
 # TALEND_WORKSPACE         - talend workspace
 # TALEND_REPO              - location of the talend repository to build
 #
+# Any environment variables of the form BUILD_xxxx will be added to a build.properties file along with the 
+# git commit from which the harvester is built
+#
 # for jenkins for instance, you can have:
 # TALEND_DIR=/var/lib/jenkins/talend
 # TALEND_CODEGEN=$TALEND_DIR/talend-codegen
@@ -17,6 +20,8 @@
 # TALEND_PROJECT_NAME=TSUNAMIBUOYS
 # TALEND_WORKSPACE=$WORKSPACE/../.talend-workspace
 # TALEND_REPO=$WORKSPACE
+#
+# and BUILD_ID, BUILD_NUMBER, etc populated by jenkins will automatically be added to the build_properties file
 
 declare -r TALEND_LOCK=$HOME/talend-lock
 
@@ -34,13 +39,31 @@ _lock() {
 		sleep 1
 		let i=$i+1
 	done
-	echo "Critical: Couldn't obtain exclusive vagrant lock '$TALEND_LOCK'"
+	echo "Critical: Couldn't obtain exclusive talend lock '$TALEND_LOCK'"
 	exit 2
 }
 
 # unlocks
 _unlock() {
 	rmdir $TALEND_LOCK
+}
+
+# add git commit and any build properties present in the environment to the zip file
+# $1 - job name
+add_build_properties() {
+	local job_name=$1; shift
+	local temp_dir=`mktemp -d` && trap "rm -rf $temp_dir" EXIT
+
+	local zip_file=`find $TALEND_BUILD -name "$job_name*.zip"`
+	local zipped_dir=${job_name}_Latest
+
+	mkdir $temp_dir/$zipped_dir
+
+	local git_commit=`cd $TALEND_REPO && git rev-parse HEAD`
+	echo GIT_COMMIT=$git_commit > $temp_dir/$zipped_dir/build.properties
+        env | grep BUILD_ >> $temp_dir/$zipped_dir/build.properties
+
+	(cd $temp_dir && zip $zip_file $zipped_dir/build.properties)
 }
 
 # builds a job
@@ -63,6 +86,8 @@ export_job() {
 		-jobName $job_name \
 		-projectDir $TALEND_REPO/$TALEND_PROJECT_NAME \
 		-targetDir $TALEND_BUILD
+
+	add_build_properties $job_name	
 
 	_unlock
 }
