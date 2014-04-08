@@ -61,7 +61,7 @@ add_build_properties() {
 
 	local git_commit=`cd $TALEND_REPO && git rev-parse HEAD`
 	echo GIT_COMMIT=$git_commit > $temp_dir/$zipped_dir/build.properties
-        env | grep BUILD_ >> $temp_dir/$zipped_dir/build.properties
+	env | grep BUILD_ >> $temp_dir/$zipped_dir/build.properties
 
 	(cd $temp_dir && zip $zip_file $zipped_dir/build.properties)
 }
