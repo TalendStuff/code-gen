@@ -32,6 +32,7 @@ import org.talend.core.model.repository.ERepositoryObjectType;
 import org.talend.core.model.repository.IRepositoryViewObject;
 import org.talend.core.repository.model.ProxyRepositoryFactory;
 import org.talend.core.repository.model.RepositoryFactoryProvider;
+import org.talend.core.ui.export.ArchiveFileExportOperationFullPath;
 import org.talend.designer.codegen.CodeGenInit;
 import org.talend.designer.codegen.CodeGeneratorActivator;
 import org.talend.designer.codegen.ITalendSynchronizer;
@@ -41,11 +42,20 @@ import org.talend.designer.runprocess.IProcessor;
 import org.talend.designer.runprocess.ItemCacheManager;
 import org.talend.designer.runprocess.ProcessorException;
 import org.talend.designer.runprocess.ProcessorUtilities;
-import org.talend.repository.documentation.ArchiveFileExportOperationFullPath;
 import org.talend.repository.documentation.ExportFileResource;
 import org.talend.repository.ui.wizards.exportjob.JavaJobExportReArchieveCreator;
 import org.talend.repository.ui.wizards.exportjob.scriptsmanager.JobJavaScriptsManager;
 import org.talend.repository.ui.wizards.exportjob.scriptsmanager.JobScriptsManager.ExportChoice;
+
+// Eclipse application plugin used to build a talend project from the command line
+//
+// Refer CodeGenInit for what's required to initialise the code generation engine:
+//
+// https://github.com/Talend/tdi-studio-se/blob/cb8285f0c69085cf038e408b0514bda39fcd8f12/main/plugins/org.talend.designer.codegen/src/main/java/org/talend/designer/codegen/CodeGenInit.java
+//
+// and JobExportAction for building/exporting the job:
+//
+// https://github.com/Talend/tdi-studio-se/blob/7a564b7dbfbfc43a421cd49818a3429fb10faed4/main/plugins/org.talend.repository/src/main/java/org/talend/repository/ui/wizards/exportjob/action/JobExportAction.java
 
 public class Generator implements IApplication {
 	private static Logger log = Logger.getLogger(Generator.class);
@@ -54,7 +64,6 @@ public class Generator implements IApplication {
 	
 	private Project project; 
 
-	@Override
     public Object start(IApplicationContext context) throws Exception {
 		
 		// Get details of job to export
@@ -104,7 +113,6 @@ public class Generator implements IApplication {
         return EXIT_OK;
     }
 
-	@Override
     public void stop() {
 		// TODO Auto-generated method stub
 		
@@ -191,6 +199,7 @@ public class Generator implements IApplication {
 		return resourcesToExport;
 	}
 
+    // https://github.com/Talend/tdi-studio-se/blob/386811a6d3a9ef61a87ad10e7ad4dfd33b2acd2c/main/plugins/org.talend.designer.runprocess/src/main/java/org/talend/designer/runprocess/JobErrorsChecker.java#L154
 	private void checkForErrors(ProcessItem job) throws SystemException, CoreException {
         boolean error = false;
 
@@ -293,7 +302,7 @@ public class Generator implements IApplication {
         exportChoiceMap.put(ExportChoice.needJobScript, Params.getBooleanOption("-needJobScript", Boolean.TRUE));
         exportChoiceMap.put(ExportChoice.needContext, Params.getBooleanOption("-needContext", Boolean.FALSE));
         exportChoiceMap.put(ExportChoice.applyToChildren, Params.getBooleanOption("-applyToChildren", Boolean.FALSE));
-        exportChoiceMap.put(ExportChoice.setParameterValues, Params.getBooleanOption("-setParameterValues", Boolean.FALSE));
+        exportChoiceMap.put(ExportChoice.needParameterValues, Params.getBooleanOption("-needParameterValues", Boolean.FALSE));
         
         return exportChoiceMap;
     }

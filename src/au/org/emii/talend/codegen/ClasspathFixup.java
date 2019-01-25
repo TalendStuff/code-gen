@@ -11,9 +11,10 @@ import org.talend.repository.documentation.ExportFileResource;
 import org.talend.repository.ui.utils.ZipToFile;
 import org.talend.repository.ui.wizards.exportjob.JavaJobExportReArchieveCreator;
 import org.talend.repository.ui.wizards.exportjob.scriptsmanager.JobJavaScriptsManager;
+import org.talend.repository.ui.wizards.exportjob.util.ExportJobUtil;
 
 /* Patch the zip file to use a classpath jar rather than specifying all jars in the classpath */
-/* Refer org.talend.repository.ui.wizards.exportjob.action.reBuildJobZipFile */
+/* Refer org.talend.repository.ui.wizards.exportjob.action.ExportJobAction reBuildJobZipFile */
 
 public class ClasspathFixup {
 
@@ -35,7 +36,7 @@ public class ClasspathFixup {
 
         String destinationZipFile = manager.getDestinationPath();
 
-        String tmpFolder = JavaJobExportReArchieveCreator.getTmpFolder();
+        String tmpFolder = ExportJobUtil.getTmpFolder();
         try {
             // unzip to tmpFolder
             ZipToFile.unZipFile(zipFile, tmpFolder);
@@ -66,7 +67,7 @@ public class ClasspathFixup {
         } catch (Exception e) {
             ExceptionHandler.process(e);
         } finally {
-            JavaJobExportReArchieveCreator.deleteTempFiles();
+            ExportJobUtil.deleteTempFiles();
             JavaJobExportReArchieveCreator.deleteTempDestinationFiles();
             new File(zipFile).delete(); // delete the temp zip file
         }
@@ -82,13 +83,17 @@ public class ClasspathFixup {
     private boolean canCreateNewFile(String disZipFileStr) {
         boolean flag = true;
         File disZipFile = new File(disZipFileStr);
-        if (!disZipFile.exists()) {
-            try {
-                disZipFile.createNewFile();
-            } catch (IOException e) {
-                flag = false;
-                ExceptionHandler.process(e);
+        File parentFile = disZipFile.getParentFile();
+        try {
+            if (!parentFile.exists()) {
+                parentFile.mkdirs();
             }
+            if (!disZipFile.exists()) {
+                disZipFile.createNewFile();
+            }
+        } catch (IOException e) {
+            flag = false;
+            ExceptionHandler.process(e);
         }
         return flag;
     }

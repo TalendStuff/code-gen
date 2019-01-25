@@ -1,16 +1,13 @@
 talend-codegen
 ==============
 
-Command line code generation (job export) plugin for talend
+Command line code generation (job export) plugin for talend open studio 7.1.1
 
-Compiling & Configuring
------------------------
+Building/Installation
+---------------------
 
- * Install eclipse
- * Import talend open studio source code from SVN (http://talendforge.org/svn/tos/tags/release-5_2_2)
- * Import talend-codegen
- * Export as 'Plug-in Development/Deployable plug-ins and fragments'
- * Copy generated .jar to plugins directory of Talend
+ * mvn clean package
+ * Copy generated .jar in target directory to plugins directory of Talend
 
 Usage
 -----
@@ -46,6 +43,6 @@ Example
 
 This example is taken from our Jenkins build process - $WORKSPACE is the location of the talend project
 
-TOS_DI-linux-gtk-x86 -nosplash --launcher.suppressErrors -data $WORKSPACE/../.talend-workspace --clean_component_cache -application au.org.emii.talend.codegen.Generator -jobName ThreddsExample -projectDir $WORKSPACE -targetDir $WORKSPACE/.talend-build -componentDir /par2/git-repos/talend_components 
+TOS_DI-linux-gtk-x86_64 -nosplash --launcher.suppressErrors -data $WORKSPACE/../.talend-workspace --clean_component_cache -application au.org.emii.talend.codegen.Generator -jobName ThreddsExample -projectDir $WORKSPACE -targetDir $WORKSPACE/.talend-build -componentDir /par2/git-repos/talend_components
  
  

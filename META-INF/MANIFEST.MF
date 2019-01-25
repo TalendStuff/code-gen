@@ -14,4 +14,4 @@ Require-Bundle: org.eclipse.core.runtime,
  org.talend.designer.codegen,
  org.talend.commons.runtime
 Eclipse-LazyStart: true
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8

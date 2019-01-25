@@ -2,17 +2,14 @@ package au.org.emii.talend.codegen;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.resource.Resource;
-import org.eclipse.emf.ecore.resource.impl.ResourceImpl;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.ui.dialogs.IOverwriteQuery;
 import org.eclipse.ui.wizards.datatransfer.IImportStructureProvider;
@@ -24,9 +21,9 @@ import org.talend.core.model.general.Project;
 import org.talend.core.model.properties.PropertiesPackage;
 import org.talend.core.repository.constants.FileConstants;
 import org.talend.core.repository.model.ProxyRepositoryFactory;
-import org.talend.core.repository.utils.URIHelper;
 import org.talend.core.repository.utils.XmiResourceManager;
 import org.talend.repository.ui.actions.importproject.FilterFileSystemStructureProvider;
+import org.talend.repository.ui.actions.importproject.ImportProjectBean;
 import org.talend.repository.ui.actions.importproject.ImportProjectsUtilities;
 import org.talend.repository.ui.utils.AfterImportProjectUtil;
 
@@ -35,7 +32,7 @@ public class ProjectUtils {
     // Import project (refer org.talend.repository.ui.actions.importproject.ImportProjectsUtilities.importProjectAs
     // which is the TOS project import, but includes changing the name which we don't want here).
     	
-    public static Project importProject(String projectDir) throws InvocationTargetException, InterruptedException, PersistenceException, CoreException, BusinessException, IOException {
+    public static Project importProject(String projectDir) throws Exception {
         File directory = new File(projectDir);
         
         String technicalName = getTechnicalName(directory);
@@ -58,7 +55,7 @@ public class ProjectUtils {
         org.talend.core.model.properties.Project project = xmiManager.loadProject(fsProject);
         
         // do additional actions after importing projects
-        AfterImportProjectUtil.runAfterImportProjectActions(new org.talend.core.model.general.Project(project));
+        AfterImportProjectUtil.runAfterImportProjectActions(new ImportProjectBean(new Project(project), new Project(project)));
         
         return getTalendProject(technicalName);
     }
