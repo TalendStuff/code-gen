@@ -1,11 +1,61 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <groupId>org.talend.studio</groupId>
-        <artifactId>tdi-studio-se</artifactId>
-        <version>7.1.1</version>
-    </parent>
+
+    <groupId>au.org.emii.talend</groupId>
     <artifactId>au.org.emii.talend.codegen</artifactId>
+    <version>7.1.1</version>
     <packaging>eclipse-plugin</packaging>
+
+    <properties>
+        <tycho.version>0.22.0</tycho.version>
+        <osgi.ws>win32</osgi.ws>
+        <osgi.os>win32</osgi.os>
+        <osgi.arch>x86</osgi.arch>
+    </properties>
+
+    <repositories>
+        <repository>
+            <id>talend_eclipse_repository</id>
+            <url>https://artifacts-oss.talend.com/nexus/content/unzip/TalendP2UnzipOpenSourceRelease/org/talend/studio/talend-tos-p2-repo/7.1.1/talend-tos-p2-repo-7.1.1.zip-unzip/</url>
+            <layout>p2</layout>
+        </repository>
+    </repositories>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.eclipse.tycho</groupId>
+                <artifactId>tycho-maven-plugin</artifactId>
+                <version>${tycho.version}</version>
+                <extensions>true</extensions>
+            </plugin>
+            <plugin>
+                <groupId>org.eclipse.tycho</groupId>
+                <artifactId>target-platform-configuration</artifactId>
+                <version>${tycho.version}</version>
+                <configuration>
+                    <executionEnvironmentDefault>JavaSE-1.8</executionEnvironmentDefault>
+                    <environments>
+                        <environment>
+                            <os>${osgi.os}</os>
+                            <ws>${osgi.ws}</ws>
+                            <arch>${osgi.arch}</arch>
+                        </environment>
+                    </environments>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.eclipse.tycho</groupId>
+                <artifactId>tycho-compiler-plugin</artifactId>
+                <version>${tycho.version}</version>
+                <configuration>
+                    <compilerArgument>-warn:+discouraged,forbidden</compilerArgument>
+                    <compilerVersion>1.8</compilerVersion>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>
