@@ -1,30 +1,22 @@
 package au.org.emii.talend.codegen;
 
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
-import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IMarker;
-import org.eclipse.core.resources.IResource;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.equinox.app.IApplication;
 import org.eclipse.equinox.app.IApplicationContext;
+import org.eclipse.jface.preference.IPreferenceStore;
 import org.talend.commons.CommonsPlugin;
 import org.talend.commons.exception.PersistenceException;
-import org.talend.commons.exception.SystemException;
 import org.talend.core.CorePlugin;
+import org.talend.core.GlobalServiceRegister;
 import org.talend.core.context.Context;
 import org.talend.core.context.RepositoryContext;
 import org.talend.core.model.general.Project;
-import org.talend.core.model.genhtml.FileCopyUtils;
 import org.talend.core.model.properties.ProcessItem;
 import org.talend.core.model.properties.PropertiesFactory;
 import org.talend.core.model.properties.User;
@@ -32,28 +24,35 @@ import org.talend.core.model.repository.ERepositoryObjectType;
 import org.talend.core.model.repository.IRepositoryViewObject;
 import org.talend.core.repository.model.ProxyRepositoryFactory;
 import org.talend.core.repository.model.RepositoryFactoryProvider;
-import org.talend.core.ui.export.ArchiveFileExportOperationFullPath;
+import org.talend.core.repository.utils.LoginTaskRegistryReader;
+import org.talend.core.runtime.services.IMavenUIService;
 import org.talend.designer.codegen.CodeGenInit;
 import org.talend.designer.codegen.CodeGeneratorActivator;
-import org.talend.designer.codegen.ITalendSynchronizer;
 import org.talend.designer.codegen.components.ui.IComponentPreferenceConstant;
-import org.talend.designer.core.model.utils.emf.talendfile.ContextParameterType;
-import org.talend.designer.runprocess.IProcessor;
 import org.talend.designer.runprocess.ItemCacheManager;
-import org.talend.designer.runprocess.ProcessorException;
-import org.talend.designer.runprocess.ProcessorUtilities;
-import org.talend.repository.documentation.ExportFileResource;
-import org.talend.repository.ui.wizards.exportjob.JavaJobExportReArchieveCreator;
-import org.talend.repository.ui.wizards.exportjob.scriptsmanager.JobJavaScriptsManager;
+import org.talend.login.ILoginTask;
+import org.talend.repository.ui.wizards.exportjob.JavaJobScriptsExportWSWizardPage.JobExportType;
+import org.talend.repository.ui.wizards.exportjob.scriptsmanager.BuildJobManager;
 import org.talend.repository.ui.wizards.exportjob.scriptsmanager.JobScriptsManager.ExportChoice;
 
 // Eclipse application plugin used to build a talend project from the command line
 //
-// Refer CodeGenInit for what's required to initialise the code generation engine:
+// This application is a command line wrapper for the core talend code generation functionality only.
+// It calls the core talend code to initialise the code generation engine, import the project into a build workspace
+// log onto the project and build the job.
+//
+// When invoked from the command line, this application replaces the core TOS startup application org.talend.rcp.intro.Application
+//
+// https://github.com/Talend/tcommon-studio-se/blob/release/7.1.1/main/plugins/org.talend.rcp/src/main/java/org/talend/rcp/intro/Application.java
+//
+// Refer to that application for the initialisation/startup code that TOS uses.  Parts of that which are applicable for a code generator
+// are included here below.
+//
+// Code required to initialise the code generator is copied from:
 //
 // https://github.com/Talend/tdi-studio-se/blob/cb8285f0c69085cf038e408b0514bda39fcd8f12/main/plugins/org.talend.designer.codegen/src/main/java/org/talend/designer/codegen/CodeGenInit.java
 //
-// and JobExportAction for building/exporting the job:
+// The code required to build a job is copied from:
 //
 // https://github.com/Talend/tdi-studio-se/blob/7a564b7dbfbfc43a421cd49818a3429fb10faed4/main/plugins/org.talend.repository/src/main/java/org/talend/repository/ui/wizards/exportjob/action/JobExportAction.java
 
@@ -65,44 +64,74 @@ public class Generator implements IApplication {
 	private Project project; 
 
     public Object start(IApplicationContext context) throws Exception {
-		
-		// Get details of job to export
+
+    	// Parse command line arguments
+
+		// project/job/version to build
 		String jobName = Params.getMandatoryStringOption("-jobName");
 		String projectDir = Params.getMandatoryStringOption("-projectDir");
-		String targetDir = Params.getMandatoryStringOption("-targetDir");
 		String version = Params.getStringOption("-version", "Latest");
-		String componentDir = Params.getStringOption("-componentDir", "");
-		
-	    // Get export options 
-		Map<ExportChoice, Object> exportChoiceMap = getExportOptions();
 
-		// Set custom component directory
-		
-        CodeGeneratorActivator.getDefault().getPreferenceStore()
-        .setValue(IComponentPreferenceConstant.USER_COMPONENTS_FOLDER, componentDir);
+		// output directory
+		String targetDir = Params.getMandatoryStringOption("-targetDir");
+
+		// user components directory
+		String componentDir = Params.getStringOption("-componentDir", "");
+
+		// job build options
+
+		Map<ExportChoice, Object> exportChoiceMap = getExportOptions();
 
 		// Let talend services know we are running in headless mode
 		// so they don't use ui stuff like messageboxes for exceptions
-        CommonsPlugin.setHeadless(true);
+		CommonsPlugin.setHeadless(true);
 
-        // Initialise connection to the local repository (the workspace) 
+		// Set the user components folder the code generator should use (from org.talend.rcp.intro.Application)
+		final IPreferenceStore store = CodeGeneratorActivator.getDefault().getPreferenceStore();
+        store.setValue(IComponentPreferenceConstant.USER_COMPONENTS_FOLDER, componentDir);
+
+        // Initialise the maven resolver (from org.talend.rcp.intro.Application)
+
+		if (GlobalServiceRegister.getDefault().isServiceRegistered(IMavenUIService.class)) {
+			IMavenUIService mavenUIService =
+				(IMavenUIService) GlobalServiceRegister.getDefault().getService(IMavenUIService.class);
+			if (mavenUIService != null) {
+				mavenUIService.checkUserSettings(new NullProgressMonitor());
+				mavenUIService.updateMavenResolver(false);
+			}
+		}
+
+        // Initialise connection to the local repository (the workspace)  (TODO: need reference!)
         repository = connectToRepository();
         
        	// Copy project into workspace
        	project = ProjectUtils.importProject(projectDir);
 
-       	// Log on to project
+       	// Log on to project (TODO: need reference)
        	log.info("Logging onto " + project.getLabel() + "...");
 
         repository.logOnProject(project, new NullProgressMonitor());
-        
+
         //Initialise code generation engine
         log.info("Initialising code generation engine...");
 
         initCodeGenerationEngine();
-        
+
+        // Run login tasks (TODO: need reference!)
+		// Includes setting location of maven settings file to configuration/maven_user_settings
+		LoginTaskRegistryReader loginTaskRegistryReader = new LoginTaskRegistryReader();
+		ILoginTask[] allLoginTasks = loginTaskRegistryReader.getAllTaskListInstance();
+
+		for (ILoginTask toBeRun : allLoginTasks) {
+			try {
+				toBeRun.run(new NullProgressMonitor());
+			} catch (Exception e) {
+				log.error("Error while execution a login task.", e); //$NON-NLS-1$
+			}
+		}
+
         // Export the job
-		exportJob(jobName, targetDir, version, exportChoiceMap);
+		exportJob(project, jobName, targetDir, version, exportChoiceMap);
 
 		// Log off the project
 		log.info("Logging off " + project.getLabel() + "...");
@@ -122,136 +151,22 @@ public class Generator implements IApplication {
 	// used for code generation
 	private void initCodeGenerationEngine() throws Exception {
 		CodeGenInit initialiser = new CodeGenInit();
-        initialiser.init();
+		initialiser.init();
 	}
 
 	// Build export file
-	private void exportJob(String jobName, String targetDir, String version,
-			Map<ExportChoice, Object> exportChoiceMap) throws ProcessorException, InvocationTargetException, InterruptedException, SystemException, CoreException {
+	private void exportJob(Project project, String jobName, String targetDir, String version,
+						   Map<ExportChoice, Object> exportChoiceMap) throws Exception {
 
-		log.info("Exporting " + jobName + "...");
+		log.info("Building " + jobName + "...");
+
 
 		// Get job to build
 		ProcessItem job = getJob(jobName, version);
 
-        // Create the job script manager that performs the build
-		JobJavaScriptsManager manager = new JobJavaScriptsManager(exportChoiceMap, "Default", "Unix", 
-				IProcessor.NO_STATISTICS, IProcessor.NO_TRACES);
-		
-		manager.setDestinationPath(targetDir + "/" + job.getProperty().getLabel() + "_" + version + ".zip");
-		manager.setContextEditableResultValuesList(new ArrayList<ContextParameterType>());
-		manager.setMultiNodes(false);
-		manager.setJobVersion(job.getProperty().getVersion());
-		manager.setBundleVersion(job.getProperty().getVersion());
-		manager.setProgressMonitor(null);
-		
-		try {
-			List<ExportFileResource> resourcesToExport = generateExportResources(
-					job, job.getProperty().getVersion(), manager);
-			
-			File tempZipFile = createTempFile(); 
-			 				 			  
-			manager.setTopFolder(resourcesToExport);
-			 
-			// Add resources built to archive
-	        createArchive( tempZipFile.getAbsolutePath(), resourcesToExport );
-	        
-	        // Rebuild zip file to use classpath jar instead of including all jars in launch script
-	        ClasspathFixup fixup = new ClasspathFixup(manager);
-	         	          	       
-	        fixup.reBuildJobZipFile( resourcesToExport, tempZipFile.getAbsolutePath());
-	        
-		} 
-		finally {
-	        // Cleanup
-	        manager.deleteTempFiles();
-	        
-	        ProcessorUtilities.resetExportConfig();
-		}
-	}
+		String destinationPath = targetDir + "/" + job.getProperty().getLabel() + "_" + version + ".zip";
 
-	private File createTempFile() {
-		 
-		 try {
-			 return File.createTempFile( "talend", ".zip" );
-		} catch (IOException e) {
-		
-			// We can't deal with it...
-			throw ( new RuntimeException(e));				 
-		}	 
-	}
-
-	// Generate resources to be exported
-	private List<ExportFileResource> generateExportResources(
-			ProcessItem job, String version, JobJavaScriptsManager manager)
-			throws ProcessorException, SystemException, CoreException {
-		
-		List<ExportFileResource> processes = new ArrayList<ExportFileResource>();
-		
-		ExportFileResource resource = new ExportFileResource(job, job.getProperty().getLabel());
-		
-		processes.add(resource);
-		
-        List<ExportFileResource> resourcesToExport = manager.getExportResources(processes.toArray(new ExportFileResource[] {}));
-        
-        checkForErrors(job);
-        
-		return resourcesToExport;
-	}
-
-    // https://github.com/Talend/tdi-studio-se/blob/386811a6d3a9ef61a87ad10e7ad4dfd33b2acd2c/main/plugins/org.talend.designer.runprocess/src/main/java/org/talend/designer/runprocess/JobErrorsChecker.java#L154
-	private void checkForErrors(ProcessItem job) throws SystemException, CoreException {
-        boolean error = false;
-
-        ITalendSynchronizer synchronizer = CorePlugin.getDefault().getCodeGeneratorService().createRoutineSynchronizer();
-        IFile sourceFile = synchronizer.getFile(job);
-        
-        // check whether the item had any compile errors when exporting the job
-        IMarker[] markers = sourceFile.findMarkers(IMarker.PROBLEM, true, IResource.DEPTH_ONE);
-        
-        for (IMarker marker : markers) {
-            Integer lineNr = (Integer) marker.getAttribute(IMarker.LINE_NUMBER);
-            String message = (String) marker.getAttribute(IMarker.MESSAGE);
-            Integer severity = (Integer) marker.getAttribute(IMarker.SEVERITY);
-            Integer start = (Integer) marker.getAttribute(IMarker.CHAR_START);
-            Integer end = (Integer) marker.getAttribute(IMarker.CHAR_END);
-            
-            if (lineNr != null && message != null && severity != null && start != null && end != null) {
-            	error = error || severity == IMarker.SEVERITY_ERROR;
-            }
-            
-            String logEntry = message + " line number: " + lineNr.toString() + " start: " + start.toString() + " end: " + end.toString();
-            
-            if (severity == IMarker.SEVERITY_ERROR) {
-            	log.error(logEntry);
-            } else if (severity == IMarker.SEVERITY_WARNING) {
-            	log.warn(logEntry);
-            } else {
-            	log.info(logEntry);
-            }
-        }
-        
-        if (error) {
-        	throw new RuntimeException("Error building job.  Aborting...");
-        }
-	}
-	
-	// Add provided resources to archive
-	private void createArchive(String destinationZipFile,
-			List<ExportFileResource> resourcesToExport)
-			throws InvocationTargetException, InterruptedException {
-		
-		String tempDestinationPath = JavaJobExportReArchieveCreator.getTmpDestinationFolder() + "/export.zip";
-        ArchiveFileExportOperationFullPath op = new ArchiveFileExportOperationFullPath(resourcesToExport,
-        		tempDestinationPath);
-        
-        op.setCreateLeadupStructure(true);
-        op.setUseCompression(true);
-
-        op.run(new NullProgressMonitor());
-        
-        String zipFile = tempDestinationPath;
-        FileCopyUtils.copy(zipFile, destinationZipFile);
+		BuildJobManager.getInstance().buildJob(destinationPath, job, version, "Default", exportChoiceMap, JobExportType.POJO, true, new NullProgressMonitor());
 	}
 
     // Find specified version of job
@@ -292,16 +207,25 @@ public class Generator implements IApplication {
     private Map<ExportChoice, Object> getExportOptions() {
         Map<ExportChoice, Object> exportChoiceMap = new EnumMap<ExportChoice, Object>(ExportChoice.class);
 
-        exportChoiceMap.put(ExportChoice.needLauncher, Params.getBooleanOption("-needLauncher", Boolean.TRUE));
+		exportChoiceMap.put(ExportChoice.needLauncher, Params.getBooleanOption("-needLauncher", Boolean.TRUE));
+		exportChoiceMap.put(ExportChoice.launcherName, Params.getStringOption("-launcherName", "Unix"));
         exportChoiceMap.put(ExportChoice.needSystemRoutine, Params.getBooleanOption("-needSystemRoutine", Boolean.TRUE));
         exportChoiceMap.put(ExportChoice.needUserRoutine, Params.getBooleanOption("-needUserRoutine", Boolean.TRUE));
         exportChoiceMap.put(ExportChoice.needTalendLibraries, Params.getBooleanOption("-needTalendLibraries", Boolean.TRUE));
         exportChoiceMap.put(ExportChoice.needJobItem, Params.getBooleanOption("-needJobItem", Boolean.FALSE));
-        exportChoiceMap.put(ExportChoice.needSourceCode, Params.getBooleanOption("-needSourceCode", Boolean.FALSE));
-        exportChoiceMap.put(ExportChoice.needDependencies, Params.getBooleanOption("-needDependencies", Boolean.FALSE));
-        exportChoiceMap.put(ExportChoice.needJobScript, Params.getBooleanOption("-needJobScript", Boolean.TRUE));
-        exportChoiceMap.put(ExportChoice.needContext, Params.getBooleanOption("-needContext", Boolean.FALSE));
-        exportChoiceMap.put(ExportChoice.applyToChildren, Params.getBooleanOption("-applyToChildren", Boolean.FALSE));
+		exportChoiceMap.put(ExportChoice.needJobScript, Params.getBooleanOption("-needJobScript", Boolean.TRUE));
+		exportChoiceMap.put(ExportChoice.needSourceCode, Params.getBooleanOption("-needSourceCode", Boolean.FALSE));
+		exportChoiceMap.put(ExportChoice.includeLibs, Params.getBooleanOption("-includeLibs", Boolean.TRUE));
+		exportChoiceMap.put(ExportChoice.includeTestSource, Params.getBooleanOption("-includeTestSource", Boolean.FALSE));
+		exportChoiceMap.put(ExportChoice.executeTests, Params.getBooleanOption("-executeTests", Boolean.FALSE));
+		exportChoiceMap.put(ExportChoice.binaries, Params.getBooleanOption("-binaries", Boolean.TRUE));
+		exportChoiceMap.put(ExportChoice.needContext, Params.getBooleanOption("-needContext", Boolean.FALSE));
+		exportChoiceMap.put(ExportChoice.contextName, Params.getStringOption("-contextName", null));
+		exportChoiceMap.put(ExportChoice.applyToChildren, Params.getBooleanOption("-applyToChildren", Boolean.FALSE));
+		exportChoiceMap.put(ExportChoice.needLog4jLevel, Params.getBooleanOption("-needLog4jLevel", Boolean.FALSE));
+		exportChoiceMap.put(ExportChoice.log4jLevel, Params.getStringOption("-log4jLevel", null));
+		exportChoiceMap.put(ExportChoice.addStatistics, Params.getBooleanOption("-addStatistics", Boolean.TRUE));
+		exportChoiceMap.put(ExportChoice.needDependencies, Params.getBooleanOption("-needDependencies", Boolean.TRUE));
         exportChoiceMap.put(ExportChoice.needParameterValues, Params.getBooleanOption("-needParameterValues", Boolean.FALSE));
         
         return exportChoiceMap;
