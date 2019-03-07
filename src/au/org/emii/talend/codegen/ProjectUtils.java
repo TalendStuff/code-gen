@@ -31,15 +31,15 @@ public class ProjectUtils {
 
     // Import project (refer org.talend.repository.ui.actions.importproject.ImportProjectsUtilities.importProjectAs
     // which is the TOS project import, but includes changing the name which we don't want here).
-    	
+
     public static Project importProject(String projectDir) throws Exception {
         File directory = new File(projectDir);
         
         String technicalName = getTechnicalName(directory);
 
         // If project exists in repository already, delete it
-       	deleteIfExists(technicalName);
-       	
+        deleteIfExists(technicalName);
+
         IImportStructureProvider provider = FilterFileSystemStructureProvider.INSTANCE;
 
         ArrayList fileSystemObjects = new ArrayList();
@@ -60,36 +60,36 @@ public class ProjectUtils {
         return getTalendProject(technicalName);
     }
 
-	private static String getTechnicalName(File projectDir) throws IOException {
+    private static String getTechnicalName(File projectDir) throws IOException {
         XmiResourceManager xrm = new XmiResourceManager();
         Resource resource = xrm.resourceSet.getResource( URI.createFileURI(projectDir.getAbsolutePath() + File.separator + FileConstants.LOCAL_PROJECT_FILENAME), true);
         org.talend.core.model.properties.Project emfProject = (org.talend.core.model.properties.Project) EcoreUtil
                 .getObjectByType(resource.getContents(), PropertiesPackage.eINSTANCE.getProject());
-		return emfProject.getTechnicalLabel();
-	}
+        return emfProject.getTechnicalLabel();
+    }
 
-	// Delete specified project from the repository if it exists 
-	private static void deleteIfExists(String technicalName) throws CoreException {
-		try {
-			final IProject fsProject = ResourceUtils.getProject(technicalName);
-			fsProject.delete(true, new NullProgressMonitor());
-		} catch (PersistenceException e) {
-			// Do nothing if the project doesn't exist
-		}
-	}
-	
-	// Get the specified talend project from the repository
-	private static Project getTalendProject(String technicalName) throws PersistenceException, BusinessException {
-		Project[] projects = ProxyRepositoryFactory.getInstance().readProject();
-		
-		for (Project project : projects) {
-			if (project.getTechnicalLabel().equals(technicalName)) {
-				return project;
-			}
-		}
-		
-		return null;
-	}
+    // Delete specified project from the repository if it exists
+    private static void deleteIfExists(String technicalName) throws CoreException {
+        try {
+            final IProject fsProject = ResourceUtils.getProject(technicalName);
+            fsProject.delete(true, new NullProgressMonitor());
+        } catch (PersistenceException e) {
+            // Do nothing if the project doesn't exist
+        }
+    }
+
+    // Get the specified talend project from the repository
+    private static Project getTalendProject(String technicalName) throws PersistenceException, BusinessException {
+        Project[] projects = ProxyRepositoryFactory.getInstance().readProject();
+
+        for (Project project : projects) {
+            if (project.getTechnicalLabel().equals(technicalName)) {
+                return project;
+            }
+        }
+
+        return null;
+    }
 
     // Overwrite all files
     private static class MyOverwriteQuery implements IOverwriteQuery {
