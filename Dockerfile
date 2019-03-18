@@ -18,11 +18,6 @@ RUN \
   apt-get install -y unzip && \
   rm -rf /var/lib/apt/lists/*
 
-# Install libcanberra-gtk-module
-RUN \
-  apt-get update && \
-  apt-get install -y libcanberra-gtk-module
-
 # Download and install Talend Open Studio in /opt
 RUN mkdir -p /opt \
   && cd /tmp \
