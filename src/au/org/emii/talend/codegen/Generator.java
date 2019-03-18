@@ -26,9 +26,11 @@ import org.talend.core.repository.model.ProxyRepositoryFactory;
 import org.talend.core.repository.model.RepositoryFactoryProvider;
 import org.talend.core.repository.utils.LoginTaskRegistryReader;
 import org.talend.core.runtime.services.IMavenUIService;
-import org.talend.designer.codegen.CodeGenInit;
 import org.talend.designer.codegen.CodeGeneratorActivator;
 import org.talend.designer.codegen.components.ui.IComponentPreferenceConstant;
+import org.talend.designer.codegen.exception.CodeGeneratorException;
+import org.talend.designer.codegen.i18n.Messages;
+import org.talend.designer.codegen.model.CodeGeneratorEmittersPoolFactory;
 import org.talend.designer.runprocess.ItemCacheManager;
 import org.talend.login.ILoginTask;
 import org.talend.repository.ui.wizards.exportjob.JavaJobScriptsExportWSWizardPage.JobExportType;
@@ -37,24 +39,11 @@ import org.talend.repository.ui.wizards.exportjob.scriptsmanager.JobScriptsManag
 
 // Eclipse application plugin used to build a talend project from the command line
 //
-// This application is a command line wrapper for the core talend code generation functionality only.
-// It calls the core talend code to initialise the code generation engine, import the project into a build workspace
-// log onto the project and build the job.
-//
-// When invoked from the command line, this application replaces the core TOS startup application org.talend.rcp.intro.Application
+// The required code to connect to the workspace, import the project, log onto the project, initialise the code
+// generation engine and build the project has been copied from the TOS startup code which normally triggers these
+// actions.  This command line application is called in place of the TOS application which normally triggers these actions:
 //
 // https://github.com/Talend/tcommon-studio-se/blob/release/7.1.1/main/plugins/org.talend.rcp/src/main/java/org/talend/rcp/intro/Application.java
-//
-// Refer to that application for the initialisation/startup code that TOS uses.  Parts of that which are applicable for a code generator
-// are included here below.
-//
-// Code required to initialise the code generator is copied from:
-//
-// https://github.com/Talend/tdi-studio-se/blob/cb8285f0c69085cf038e408b0514bda39fcd8f12/main/plugins/org.talend.designer.codegen/src/main/java/org/talend/designer/codegen/CodeGenInit.java
-//
-// The code required to build a job is copied from:
-//
-// https://github.com/Talend/tdi-studio-se/blob/7a564b7dbfbfc43a421cd49818a3429fb10faed4/main/plugins/org.talend.repository/src/main/java/org/talend/repository/ui/wizards/exportjob/action/JobExportAction.java
 
 public class Generator implements IApplication {
     private static Logger log = Logger.getLogger(Generator.class);
@@ -65,7 +54,7 @@ public class Generator implements IApplication {
 
     public Object start(IApplicationContext context) throws Exception {
 
-        // Parse command line arguments
+        // Parse command line arguments for the code generator
 
         // project/job/version to build
         String jobName = Params.getMandatoryStringOption("-jobName");
@@ -86,11 +75,14 @@ public class Generator implements IApplication {
         // so they don't use ui stuff like messageboxes for exceptions
         CommonsPlugin.setHeadless(true);
 
-        // Set the user components folder the code generator should use (from org.talend.rcp.intro.Application)
+        // Set the user components folder the code generator should use
+        // https://github.com/Talend/tdi-studio-se/blob/master/main/plugins/org.talend.designer.codegen/src/main/java/org/talend/designer/codegen/components/model/UserComponentsProvider.java#L56
+
         final IPreferenceStore store = CodeGeneratorActivator.getDefault().getPreferenceStore();
         store.setValue(IComponentPreferenceConstant.USER_COMPONENTS_FOLDER, componentDir);
 
-        // Initialise the maven resolver (from org.talend.rcp.intro.Application)
+        // Initialise the maven resolver
+        // https://github.com/Talend/tcommon-studio-se/blob/release/7.1.1/main/plugins/org.talend.rcp/src/main/java/org/talend/rcp/intro/Application.java#L121
 
         if (GlobalServiceRegister.getDefault().isServiceRegistered(IMavenUIService.class)) {
             IMavenUIService mavenUIService =
@@ -101,24 +93,20 @@ public class Generator implements IApplication {
             }
         }
 
-        // Initialise connection to the local repository (the workspace)  (TODO: need reference!)
+        // Initialise connection to the local repository (the workspace)
         repository = connectToRepository();
         
-        // Copy project into workspace
+        // Import project into workspace
         project = ProjectUtils.importProject(projectDir);
 
-        // Log on to project (TODO: need reference)
         log.info("Logging onto " + project.getLabel() + "...");
 
         repository.logOnProject(project, new NullProgressMonitor());
 
-        //Initialise code generation engine
-        log.info("Initialising code generation engine...");
+        // Run login tasks to initialise code generation
+        // https://github.com/Talend/tcommon-studio-se/blob/release/7.1.1/main/plugins/org.talend.rcp/src/main/java/org/talend/rcp/intro/ApplicationWorkbenchAdvisor.java#L105
+        log.info("Running login tasks...");
 
-        initCodeGenerationEngine();
-
-        // Run login tasks (TODO: need reference!)
-        // Includes setting location of maven settings file to configuration/maven_user_settings
         LoginTaskRegistryReader loginTaskRegistryReader = new LoginTaskRegistryReader();
         ILoginTask[] allLoginTasks = loginTaskRegistryReader.getAllTaskListInstance();
 
@@ -128,6 +116,27 @@ public class Generator implements IApplication {
             } catch (Exception e) {
                 log.error("Error while execution a login task.", e); //$NON-NLS-1$
             }
+        }
+
+        // Wait until code generator has been initialised before trying to build any code
+        // https://github.com/Talend/tdi-studio-se/blob/release/7.1.1/main/plugins/org.talend.designer.codegen/src/main/java/org/talend/designer/codegen/CodeGenerator.java#L201
+        log.info("Waiting for code generator to be initialised");
+
+        long startTimer = System.currentTimeMillis();
+        long endTimer = startTimer;
+
+        try {
+            while(!CodeGeneratorEmittersPoolFactory.isInitialized() && endTimer - startTimer < 900000L) {
+                Thread.sleep(1000L);
+                endTimer = System.currentTimeMillis();
+            }
+        } catch (InterruptedException var14) {
+            log.error(var14.getMessage(), var14);
+            throw new CodeGeneratorException(var14);
+        }
+
+        if (endTimer - startTimer > 900000L) {
+            throw new CodeGeneratorException(Messages.getString("CodeGenerator.JET.TimeOut"));
         }
 
         // Export the job
@@ -144,14 +153,6 @@ public class Generator implements IApplication {
 
     public void stop() {
         // TODO Auto-generated method stub
-
-    }
-
-    // Code generation engine must be initialised.  Initialisation loads java_jet template emitters
-    // used for code generation
-    private void initCodeGenerationEngine() throws Exception {
-        CodeGenInit initialiser = new CodeGenInit();
-        initialiser.init();
     }
 
     // Build export file
@@ -159,7 +160,6 @@ public class Generator implements IApplication {
                            Map<ExportChoice, Object> exportChoiceMap) throws Exception {
 
         log.info("Building " + jobName + "...");
-
 
         // Get job to build
         ProcessItem job = getJob(jobName, version);
