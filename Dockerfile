@@ -54,7 +54,7 @@ RUN cd /tmp \
 # Install required SWT libraries for running TOS
 RUN \
   apt-get update && \
-  apt-get install -y libswt-gtk-3-jni libswt-gtk-3-java && \
+  apt-get install -y libswt-gtk-3-jni libswt-gtk-3-java gtk2-engines-pixbuf libcanberra-gtk-module && \
   rm -rf /var/lib/apt/lists/*
 
 # Install firefox
@@ -68,6 +68,14 @@ RUN \
   echo "\n-Dorg.eclipse.swt.browser.XULRunnerPath=/opt/xulrunner" \
   >> /opt/TOS_DI-20181026_1147-V7.1.1/TOS_DI-linux-gtk-x86_64.ini
 
+# Add required themes/fonts for TOS
+
+RUN \
+  apt-get update && \
+  apt-get install -y ttf-ubuntu-font-family && \
+  apt-get install -y greybird-gtk-theme && \
+  rm -rf /var/lib/apt/lists/*
+
 # Install code generator plugin
 COPY target/au.org.emii.talend.codegen-7.1.1.jar /opt/TOS_DI-20181026_1147-V7.1.1/plugins
 
@@ -79,8 +87,10 @@ ENV PATH $JAVA_HOME/bin:$PATH
 
 ENV TALEND_WORKSPACE /workspace
 
-COPY files/* /opt/TOS_DI-20181026_1147-V7.1.1/
+COPY files/install_dir/* /opt/TOS_DI-20181026_1147-V7.1.1/
 RUN chmod +x /opt/TOS_DI-20181026_1147-V7.1.1/*.sh
+
+COPY files/configuration/* /opt/TOS_DI-20181026_1147-V7.1.1/configuration/
 
 WORKDIR /opt/TOS_DI-20181026_1147-V7.1.1
 ENTRYPOINT ["/bin/bash"]
