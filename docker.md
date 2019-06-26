@@ -2,6 +2,10 @@
 
 Docker image for running Talend Open Studio 7.1.1 and building Talend Open Studio 7.1.1 projects
 
+Requires the code generator to be built before building the image:
+
+    mvn clean package
+
 To build a tos:7.1.1 image:
 
     docker build --tag tos:7.1.1 .
