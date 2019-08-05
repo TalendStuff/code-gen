@@ -27,10 +27,10 @@ RUN mkdir -p /opt \
 
 # Download and install TOS SDI
 RUN cd /tmp \
-  && curl -SL https://s3-ap-southeast-2.amazonaws.com/imos-binary/static/talend/TOS-Spatial-7.1.1-patch.zip -O \
-  && unzip -d /tmp /tmp/TOS-Spatial-7.1.1-patch.zip \
-  && cp -r /tmp/target/TOS-Spatial-7.1.1/plugins/* /opt/TOS_DI-20181026_1147-V7.1.1/plugins \
-  && rm -rf /tmp/TOS-Spatial-7.1.1-patch.zip /tmp/target
+  && curl -SL https://s3-ap-southeast-2.amazonaws.com/imos-binary/static/talend/TOS-Spatial-7.1.1.zip -O \
+  && unzip -d /tmp /tmp/TOS-Spatial-7.1.1.zip \
+  && cp -r /tmp/TOS-Spatial-7.1.1/plugins/* /opt/TOS_DI-20181026_1147-V7.1.1/plugins \
+  && rm -rf /tmp/TOS-Spatial-7.1.1.zip /tmp/target
 
 # Download and install xulrunner in /opt
 RUN cd /tmp \
@@ -40,10 +40,10 @@ RUN cd /tmp \
 
 # Download and install talend maven repo
 RUN cd /tmp \
-  && curl -SL  https://s3-ap-southeast-2.amazonaws.com/imos-binary/static/talend/talend-maven-repo.zip -O \
+  && curl -SL  https://s3-ap-southeast-2.amazonaws.com/imos-binary/static/talend/talend-maven-repo-1.0.zip -O \
   && mkdir -p /opt/TOS_DI-20181026_1147-V7.1.1/configuration/.m2 \
-  && unzip -d /opt/TOS_DI-20181026_1147-V7.1.1/configuration/.m2 /tmp/talend-maven-repo.zip \
-  && rm /tmp/talend-maven-repo.zip
+  && unzip -d /opt/TOS_DI-20181026_1147-V7.1.1/configuration/.m2 /tmp/talend-maven-repo-1.0.zip \
+  && rm /tmp/talend-maven-repo-1.0.zip
 
 # Install xulrunner
 RUN cd /tmp \
@@ -55,6 +55,12 @@ RUN cd /tmp \
 RUN \
   apt-get update && \
   apt-get install -y libswt-gtk-3-jni libswt-gtk-3-java gtk2-engines-pixbuf libcanberra-gtk-module && \
+  rm -rf /var/lib/apt/lists/*
+
+# Install xvfb for performing builds without requiring connection to the hosts xserver
+RUN \
+  apt-get update && \
+  apt-get install -y xvfb && \
   rm -rf /var/lib/apt/lists/*
 
 # Install firefox

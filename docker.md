@@ -30,11 +30,11 @@ To use a host workspace and user component directory mount them to /workspace an
 
 To build the generic timestep harvester in $HOME/git-repos/aodn/harvesters/workspace using components in $HOME/git-repos/aodn/talend-components/directory-build/target/talend-components:/opt/talend-components
 
-     docker run -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -v "$HOME/git-repos/aodn/harvesters/workspace:/workspace:rw" -v "$HOME/git-repos/aodn/talend-components/directory-build/target/talend-components:/opt/talend-components" -it --rm tos:7.1.1 build.sh GENERIC_TIMESTEP GENERIC_TIMESTEP_harvester
+     docker run -v "$HOME/git-repos/aodn/harvesters/workspace:/workspace:rw" -v "$HOME/git-repos/aodn/talend-components/directory-build/target/talend-components:/opt/talend-components" -it --rm tos:7.1.1 build.sh GENERIC_TIMESTEP GENERIC_TIMESTEP_harvester
 
 And to debug building the generic timestep harvester (port 8990):
 
-     docker run --net=host -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -v "$HOME/git-repos/aodn/harvesters/workspace:/workspace:rw" -v "$HOME/git-repos/aodn/talend-components/directory-build/target/talend-components:/opt/talend-components" -it --rm tos:7.1.1 debug-build.sh GENERIC_TIMESTEP GENERIC_TIMESTEP_harvester
+     docker run --net=host -v "$HOME/git-repos/aodn/harvesters/workspace:/workspace:rw" -v "$HOME/git-repos/aodn/talend-components/directory-build/target/talend-components:/opt/talend-components" -it --rm tos:7.1.1 debug-build.sh GENERIC_TIMESTEP GENERIC_TIMESTEP_harvester
 
 Errors will be reported in $HOME/git-repos/aodn/harvesters/workspace/.build-workspace/.metadata/.log
 
