@@ -1,0 +1,16 @@
+version: '2'
+
+services:
+  dev:
+    image: talend-codegen-build
+    build:
+      context: .
+      args:
+        BUILDER_UID: 1000
+    environment:
+      - PATH=/app/bin:/home/builder/.local/bin:$PATH
+    stdin_open: true
+    tty: true
+    working_dir: /app
+    volumes:
+      - './:/app'
