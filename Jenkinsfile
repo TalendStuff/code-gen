@@ -6,6 +6,12 @@ pipeline {
         }
     }
     stages {
+        stage('clean') {
+            steps {
+                sh 'git reset --hard'
+                sh 'git clean -xffd'
+            }
+        }
         stage('package') {
             steps {
                 sh 'mvn clean package'
