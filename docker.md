@@ -4,11 +4,15 @@ Docker image for running Talend Open Studio 7.1.1 and building Talend Open Studi
 
 Requires the code generator to be built before building the image:
 
+    # build locally
     mvn clean package
+    
+    # OR build inside Docker build environment
+    docker-compose run dev mvn clean package
 
 To build a tos:7.1.1 image:
 
-    docker build --tag tos:7.1.1 .
+    docker build --file Dockerfile.app --tag tos:7.1.1 .
 
 To run Talend Open Studio or to build talend projects you need to give docker access to your xserver
 
@@ -20,6 +24,9 @@ Then, to run Talend Open Studio:
 
     docker run -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -it --rm tos:7.1.1 talend.sh
 
+    # OR run with Docker Compose
+    docker-compose run app
+ 
 To debug Talend Open Studio (port 8990):
 
     docker run --net=host -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -it --rm tos:7.1.1 debug-tos.sh

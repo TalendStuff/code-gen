@@ -14,3 +14,16 @@ services:
     working_dir: /app
     volumes:
       - './:/app'
+  app:
+    image: tos:7.1.1
+    build:
+      context: .
+      dockerfile: Dockerfile.app
+    environment:
+      - DISPLAY
+    stdin_open: true
+    tty: true
+    volumes:
+      - './:/app'
+      - '/tmp/.X11-unix:/tmp/.X11-unix'
+    entrypoint: /opt/TOS_DI-20181026_1147-V7.1.1/talend.sh
