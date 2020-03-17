@@ -2,6 +2,8 @@
 
 Docker image for running Talend Open Studio 7.1.1 and building Talend Open Studio 7.1.1 projects
 
+## Pre-requisites
+
 Requires the code generator to be built before building the image:
 
     # build locally
@@ -20,6 +22,8 @@ To run Talend Open Studio or to build talend projects you need to give docker ac
 
 (For Windows or Mac refer to https://cuneyt.aliustaoglu.biz/en/running-gui-applications-in-docker-on-windows-linux-mac-hosts/)
 
+## Running Talend Open Studio
+
 Then, to run Talend Open Studio:
 
     docker run -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -it --rm tos:7.1.1 talend.sh
@@ -31,9 +35,41 @@ To debug Talend Open Studio (port 8990):
 
     docker run --net=host -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -it --rm tos:7.1.1 debug-tos.sh
 
-To use a host workspace and user component directory mount them to /workspace and /opt/talend-components.  For example:
+## Editing Harvesters
 
-    -v "$HOME/git-repos/aodn/harvesters/workspace:/workspace:rw" -v "$HOME/git-repos/aodn/talend-components/directory-build/target/talend-components:/opt/talend-components"
+First you need to clone the harvesters and talend-components repositories to your local machine:
+
+    git clone git@github.com:aodn/talend-components.git
+    git clone git@github.com:aodn/harvesters.git
+
+The talend components repo needs to be built to create talend components
+
+    cd talend-components
+    mvn clean package
+
+To use the harvesters workspace and talend components built above, mount them to /workspace and /opt/talend-components
+and use them in talend.
+
+For example to run talend with harvesters and talend-components cloned to $HOME/git-repos/aodn and as built above:
+
+    docker run --net=host -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix \\
+     -v "$HOME/git-repos/aodn/harvesters/workspace:/workspace:rw" \\
+     -v "$HOME/git-repos/aodn/talend-components/directory-build/target/talend-components:/opt/talend-components" \\
+     -it --rm tos:7.1.1 debug-tos.sh
+
+And then to use the harvesters workspace:
+
+* select "Manage Connections" in the project selection dialog
+* select /workspace for workspace and restart when asked
+
+And to use IMOS components mounted to /opt/talend-components
+
+* open an existing project
+* BEFORE opening any jobs,
+  * from the menu select Window / Preferences
+  * under talend / components set "user components folder" to /opt/talend-components
+
+## Building harvesters from the command line
 
 To build the generic timestep harvester in $HOME/git-repos/aodn/harvesters/workspace using components in $HOME/git-repos/aodn/talend-components/directory-build/target/talend-components:/opt/talend-components
 
