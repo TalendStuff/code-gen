@@ -55,7 +55,7 @@ For example to run talend with harvesters and talend-components cloned to $HOME/
     docker run --net=host -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix \\
      -v "$HOME/git-repos/aodn/harvesters/workspace:/workspace:rw" \\
      -v "$HOME/git-repos/aodn/talend-components/directory-build/target/talend-components:/opt/talend-components" \\
-     -it --rm tos:7.1.1 debug-tos.sh
+     -it --rm tos:7.1.1 talend.sh
 
 And then to use the harvesters workspace:
 
