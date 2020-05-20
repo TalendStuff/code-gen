@@ -15,7 +15,7 @@ services:
     volumes:
       - './:/app'
   app:
-    image: tos:7.1.1
+    image: tos:7.3.1
     build:
       context: .
       dockerfile: Dockerfile.app
@@ -26,4 +26,4 @@ services:
     volumes:
       - './:/app'
       - '/tmp/.X11-unix:/tmp/.X11-unix'
-    entrypoint: /opt/TOS_DI-20181026_1147-V7.1.1/talend.sh
+    entrypoint: /opt/TOS_DI-20200219_1130-V7.3.1/talend.sh

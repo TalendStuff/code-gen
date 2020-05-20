@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: BuildJob Plug-in
 Bundle-SymbolicName: au.org.emii.talend.codegen;singleton:=true
-Bundle-Version: 7.1.1
+Bundle-Version: 7.3.1
 Bundle-Activator: au.org.emii.talend.codegen.Activator
 Require-Bundle: org.eclipse.platform,
   org.eclipse.core.runtime,

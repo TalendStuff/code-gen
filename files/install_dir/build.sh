@@ -8,7 +8,7 @@ mkdir $TALEND_WORKSPACE/.talend-build
 
 # build specified job
 
-cd /opt/TOS_DI-20181026_1147-V7.1.1
+cd /opt/TOS_DI-20200219_1130-V7.3.1
 
 xvfb-run ./TOS_DI-linux-gtk-x86_64 \
   -nosplash \

@@ -1,4 +1,4 @@
 *
-!target/au.org.emii.talend.codegen-7.1.1.jar
+!target/au.org.emii.talend.codegen-7.3.1.jar
 !files/install_dir/*
 !files/configuration/*

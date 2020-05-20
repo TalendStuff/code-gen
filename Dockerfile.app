@@ -1,5 +1,5 @@
 #################################################################
-# Dockerfile to build image for running Talend Open Studio 7.1.1
+# Dockerfile to build image for running Talend Open Studio 7.3.1
 #################################################################
 
 FROM ubuntu:18.04
@@ -21,16 +21,16 @@ RUN \
 # Download and install Talend Open Studio in /opt
 RUN mkdir -p /opt \
   && cd /tmp \
-  && curl -SL https://s3-ap-southeast-2.amazonaws.com/imos-binary/static/talend/TOS_DI-20181026_1147-V7.1.1.zip -O \
-  && unzip -d /opt /tmp/TOS_DI-20181026_1147-V7.1.1.zip \
-  && rm /tmp/TOS_DI-20181026_1147-V7.1.1.zip
+  && curl -SL https://s3-ap-southeast-2.amazonaws.com/imos-binary/static/talend/TOS_DI-20200219_1130-V7.3.1.zip -O \
+  && unzip -d /opt /tmp/TOS_DI-20200219_1130-V7.3.1.zip \
+  && rm /tmp/TOS_DI-20200219_1130-V7.3.1.zip
 
 # Download and install TOS SDI
 RUN cd /tmp \
-  && curl -SL https://s3-ap-southeast-2.amazonaws.com/imos-binary/static/talend/TOS-Spatial-7.1.1.zip -O \
-  && unzip -d /tmp /tmp/TOS-Spatial-7.1.1.zip \
-  && cp -r /tmp/TOS-Spatial-7.1.1/plugins/* /opt/TOS_DI-20181026_1147-V7.1.1/plugins \
-  && rm -rf /tmp/TOS-Spatial-7.1.1.zip /tmp/target
+  && curl -SL https://s3-ap-southeast-2.amazonaws.com/imos-binary/static/talend/TOS-Spatial-7.3.1.zip -O \
+  && unzip -d /tmp /tmp/TOS-Spatial-7.3.1.zip \
+  && cp -r /tmp/TOS-Spatial-7.3.1/plugins/* /opt/TOS_DI-20200219_1130-V7.3.1/plugins \
+  && rm -rf /tmp/TOS-Spatial-7.3.1.zip /tmp/target
 
 # Download and install xulrunner in /opt
 RUN cd /tmp \
@@ -41,8 +41,8 @@ RUN cd /tmp \
 # Download and install talend maven repo
 RUN cd /tmp \
   && curl -SL  https://s3-ap-southeast-2.amazonaws.com/imos-binary/static/talend/talend-maven-repo-1.0.zip -O \
-  && mkdir -p /opt/TOS_DI-20181026_1147-V7.1.1/configuration/.m2 \
-  && unzip -d /opt/TOS_DI-20181026_1147-V7.1.1/configuration/.m2 /tmp/talend-maven-repo-1.0.zip \
+  && mkdir -p /opt/TOS_DI-20200219_1130-V7.3.1/configuration/.m2 \
+  && unzip -d /opt/TOS_DI-20200219_1130-V7.3.1/configuration/.m2 /tmp/talend-maven-repo-1.0.zip \
   && rm /tmp/talend-maven-repo-1.0.zip
 
 # Install xulrunner
@@ -72,7 +72,7 @@ RUN \
 # Configure Talend to use xulrunner
 RUN \
   echo "\n-Dorg.eclipse.swt.browser.XULRunnerPath=/opt/xulrunner" \
-  >> /opt/TOS_DI-20181026_1147-V7.1.1/TOS_DI-linux-gtk-x86_64.ini
+  >> /opt/TOS_DI-20200219_1130-V7.3.1/TOS_DI-linux-gtk-x86_64.ini
 
 # Add required themes/fonts for TOS
 
@@ -83,7 +83,7 @@ RUN \
   rm -rf /var/lib/apt/lists/*
 
 # Install code generator plugin
-COPY target/au.org.emii.talend.codegen-7.1.1.jar /opt/TOS_DI-20181026_1147-V7.1.1/plugins
+COPY target/au.org.emii.talend.codegen-7.3.1.jar /opt/TOS_DI-20200219_1130-V7.3.1/plugins
 
 # Add JAVA_HOME and add to path as required by TOS
 ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64
@@ -93,12 +93,12 @@ ENV PATH $JAVA_HOME/bin:$PATH
 
 ENV TALEND_WORKSPACE /workspace
 
-COPY files/install_dir/* /opt/TOS_DI-20181026_1147-V7.1.1/
-RUN chmod +x /opt/TOS_DI-20181026_1147-V7.1.1/*.sh
+COPY files/install_dir/* /opt/TOS_DI-20200219_1130-V7.3.1/
+RUN chmod +x /opt/TOS_DI-20200219_1130-V7.3.1/*.sh
 
-COPY files/configuration/* /opt/TOS_DI-20181026_1147-V7.1.1/configuration/
+COPY files/configuration/* /opt/TOS_DI-20200219_1130-V7.3.1/configuration/
 
-WORKDIR /opt/TOS_DI-20181026_1147-V7.1.1
+WORKDIR /opt/TOS_DI-20200219_1130-V7.3.1
 ENTRYPOINT ["/bin/bash"]
 
 
