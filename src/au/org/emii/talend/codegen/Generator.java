@@ -67,6 +67,9 @@ public class Generator implements IApplication {
         // user components directory
         String componentDir = Params.getStringOption("-componentDir", "");
 
+        // Context Name
+        String contextName = Params.getStringOption("-contextName", "Default");
+
         // job build options
 
         Map<ExportChoice, Object> exportChoiceMap = getExportOptions();
@@ -95,7 +98,7 @@ public class Generator implements IApplication {
 
         // Initialise connection to the local repository (the workspace)
         repository = connectToRepository();
-        
+
         // Import project into workspace
         project = ProjectUtils.importProject(projectDir);
 
@@ -140,7 +143,7 @@ public class Generator implements IApplication {
         }
 
         // Export the job
-        exportJob(project, jobName, targetDir, version, exportChoiceMap);
+        exportJob(project, jobName, targetDir, version, contextName, exportChoiceMap);
 
         // Log off the project
         log.info("Logging off " + project.getLabel() + "...");
@@ -156,7 +159,7 @@ public class Generator implements IApplication {
     }
 
     // Build export file
-    private void exportJob(Project project, String jobName, String targetDir, String version,
+    private void exportJob(Project project, String jobName, String targetDir, String version, String contextName,
                            Map<ExportChoice, Object> exportChoiceMap) throws Exception {
 
         log.info("Building " + jobName + "...");
@@ -166,7 +169,7 @@ public class Generator implements IApplication {
 
         String destinationPath = targetDir + "/" + job.getProperty().getLabel() + "_" + version + ".zip";
 
-        BuildJobManager.getInstance().buildJob(destinationPath, job, version, "Default", exportChoiceMap, JobExportType.POJO, true, new NullProgressMonitor());
+        BuildJobManager.getInstance().buildJob(destinationPath, job, version, contextName, exportChoiceMap, JobExportType.POJO, true, new NullProgressMonitor());
     }
 
     // Find specified version of job
@@ -199,7 +202,7 @@ public class Generator implements IApplication {
 
         Context ctx = CorePlugin.getContext();
         ctx.putProperty(Context.REPOSITORY_CONTEXT_KEY, repositoryContext);
-        
+
         return repositoryFactory;
     }
 
@@ -219,15 +222,15 @@ public class Generator implements IApplication {
         exportChoiceMap.put(ExportChoice.includeTestSource, Params.getBooleanOption("-includeTestSource", Boolean.FALSE));
         exportChoiceMap.put(ExportChoice.executeTests, Params.getBooleanOption("-executeTests", Boolean.FALSE));
         exportChoiceMap.put(ExportChoice.binaries, Params.getBooleanOption("-binaries", Boolean.TRUE));
-        exportChoiceMap.put(ExportChoice.needContext, Params.getBooleanOption("-needContext", Boolean.FALSE));
-        exportChoiceMap.put(ExportChoice.contextName, Params.getStringOption("-contextName", null));
+        exportChoiceMap.put(ExportChoice.needContext, Params.getBooleanOption("-needContext", Boolean.TRUE));
+        exportChoiceMap.put(ExportChoice.contextName, Params.getStringOption("-contextName", "Default"));
         exportChoiceMap.put(ExportChoice.applyToChildren, Params.getBooleanOption("-applyToChildren", Boolean.FALSE));
         exportChoiceMap.put(ExportChoice.needLog4jLevel, Params.getBooleanOption("-needLog4jLevel", Boolean.FALSE));
         exportChoiceMap.put(ExportChoice.log4jLevel, Params.getStringOption("-log4jLevel", null));
         exportChoiceMap.put(ExportChoice.addStatistics, Params.getBooleanOption("-addStatistics", Boolean.TRUE));
         exportChoiceMap.put(ExportChoice.needDependencies, Params.getBooleanOption("-needDependencies", Boolean.TRUE));
         exportChoiceMap.put(ExportChoice.needParameterValues, Params.getBooleanOption("-needParameterValues", Boolean.FALSE));
-        
+
         return exportChoiceMap;
     }
 
@@ -237,5 +240,5 @@ public class Generator implements IApplication {
         user.setLogin("user@talend.com"); //$NON-NLS-1$
         return user;
     }
-   
+
 }
