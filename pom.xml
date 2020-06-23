@@ -4,7 +4,7 @@
 
     <groupId>au.org.emii.talend</groupId>
     <artifactId>au.org.emii.talend.codegen</artifactId>
-    <version>7.1.1</version>
+    <version>7.3.1</version>
     <packaging>eclipse-plugin</packaging>
 
     <properties>
@@ -17,7 +17,17 @@
     <repositories>
         <repository>
             <id>talend_eclipse_repository</id>
+            <url>https://artifacts-oss.talend.com/nexus/content/unzip/TalendP2UnzipOpenSourceRelease/org/talend/studio/talend-tos-p2-repo/7.3.1/talend-tos-p2-repo-7.3.1.zip-unzip/</url>
+            <layout>p2</layout>
+        </repository>
+        <repository>
+            <id>talend_eclipse_rep_one_one</id>
             <url>https://artifacts-oss.talend.com/nexus/content/unzip/TalendP2UnzipOpenSourceRelease/org/talend/studio/talend-tos-p2-repo/7.1.1/talend-tos-p2-repo-7.1.1.zip-unzip/</url>
+            <layout>p2</layout>
+        </repository>
+        <repository>
+            <id>eclipse</id>
+            <url>https://download.eclipse.org/releases/photon/</url>
             <layout>p2</layout>
         </repository>
     </repositories>

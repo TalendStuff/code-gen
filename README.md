@@ -1,13 +1,15 @@
 talend-codegen
 ==============
 
-Command line code generation (job export) plugin for talend open studio 7.1.1
+Command line code generation (job export) plugin for Talend open studio 7.3.1
 
 Building/Installation
 ---------------------
 
  * mvn clean package
  * Copy generated .jar in target directory to plugins directory of Talend
+ * Open the file config.info in the folder configuration/ of your Talend Studio 7.3.1
+ * At the end of the very long line for osgi.bundles= add ,au.org.emii.talend.codegen (so something like osgi.bundles=blalbblabla,au.org.emii.talend.codegen )
 
 Usage
 -----
@@ -45,8 +47,7 @@ This example is taken from our Jenkins build process - $WORKSPACE is the locatio
 
 TOS_DI-linux-gtk-x86_64 -nosplash --launcher.suppressErrors -data $WORKSPACE/../.talend-workspace --clean_component_cache -application au.org.emii.talend.codegen.Generator -jobName ThreddsExample -projectDir $WORKSPACE -targetDir $WORKSPACE/.talend-build -componentDir /par2/git-repos/talend_components
 
-
 Credits
 -------
 
-This project was originally developed for the [Australian Ocean Data Network](https://portal.aodn.org.au/). 
+This project was originally developed for the [Australian Ocean Data Network](https://portal.aodn.org.au/). The project came with docker support, which you can still find in the [original branch](../original). 
