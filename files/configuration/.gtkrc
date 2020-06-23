@@ -1,9 +1,0 @@
-include "/usr/share/themes/Greybird/gtk-2.0/gtkrc"
-
-style "user-font" {
-        font_name = "Ubuntu 11"
-}
-
-widget_class "*" style "user-font"
-
-gtk-font-name="Ubuntu 11"
